@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "naver-soldout-check"
+version = "0.1.0"
+description = ""
+authors = ["dudcjs2779 <dudcjs2779@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+selenium = "^4.14.0"
+webdriver-manager = "^4.0.1"
+openpyxl = "^3.1.2"
+pandas = "2.1.0"
+pyqt5-tools = "^5.15.9.3.3"
+requests = "^2.31.0"
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.26.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
