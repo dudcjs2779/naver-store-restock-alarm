@@ -36,30 +36,45 @@ class CrawlingClass():
         except:
             sold_out = "입고"
             
-        print(sold_out)
-        option_div = self.driver.find_element(By.CLASS_NAME, "bd_2dy3Y")
-        options = option_div.find_elements(By.CLASS_NAME, "bd_1fhc9")
-        options_text_list = []
-
-        for i in range(len(options)):
-            options_text_list.append(options[i].text)
+        # print(sold_out)
             
-        options_text = ','.join(options_text_list)
-
         title_text = self.driver.find_element(By.CLASS_NAME, '_22kNQuEXmb').text
         price_text = self.driver.find_elements(By.CLASS_NAME, '_1LY7DqCnwR')[-1].text
+        
+        # print(title_text)
+        # print(price_text)
+        
+        try:
+            option_div = self.driver.find_element(By.CLASS_NAME, "bd_2dy3Y")
+        except:
+            option_div = None
+        
+        if option_div is not None:
+            options = option_div.find_elements(By.CLASS_NAME, "bd_1fhc9")
+            options_text_list = []
 
-        print(title_text)
-        print(price_text)
+            for i in range(len(options)):
+                options_text_list.append(options[i].text)
+                
+            options_text = ','.join(options_text_list)
 
-        product_data = {
-            "제품": title_text,
-            "가격": price_text,
-            "옵션": options_text,
-            "옵션 값": "",
-            "품절": sold_out,
-            "링크":  link
-        }
+            product_data = {
+                "제품": title_text,
+                "가격": price_text,
+                "옵션": options_text,
+                "옵션 값": "",
+                "품절": sold_out,
+                "링크":  link
+            }
+        else:
+            product_data = {
+                "제품": title_text,
+                "가격": price_text,
+                "옵션": "",
+                "옵션 값": "",
+                "품절": sold_out,
+                "링크":  link
+            }
 
         return product_data
     
@@ -159,45 +174,60 @@ class CrawlingClass():
             print("page is loaded")
         except:
             print("page loading is failed")
+           
+           
+        is_soldout = False
+        
+        # 옵션 div 
+        try:    
+            option_div = self.driver.find_element(By.CLASS_NAME, "bd_2dy3Y")
+        except:
+            option_div = None   
+        
+        # 옵션이 있는 상품
+        if option_div is not None:
+            option_types =  option_div.find_elements(By.CLASS_NAME, "bd_1fhc9")
+            split_options = options.split(',')
             
-        # 옵션 div
-        option_div = self.driver.find_element(By.CLASS_NAME, "bd_2dy3Y")
-        option_types =  option_div.find_elements(By.CLASS_NAME, "bd_1fhc9")
-        
-        split_options = options.split(',')
-        
-        last_option = split_options[-1]
-        
-        # 옵션에서 품절 text 제거
-        if "(품절)" in last_option:
-            last_length = len(last_option)
-            last_option = last_option[:last_length-5]
-            print(last_option)
-            split_options[-1] = last_option
-        
-        is_soldout:bool = False
-        
-        for i in range(len(option_types)):
-            option_types[i].click()
-            option_type_elems = option_div.find_elements(By.CLASS_NAME, "bd_3iRne")
+            last_option = split_options[-1]
             
-            for elem in option_type_elems:
-                # print(f"{option_types[i].text}, {elem.text}, {split_options[i]}")
+            # 옵션에서 품절 text 제거
+            if "(품절)" in last_option:
+                last_length = len(last_option)
+                last_option = last_option[:last_length-5]
+                print(last_option)
+                split_options[-1] = last_option
+            
+            
+            for i in range(len(option_types)):
+                option_types[i].click()
+                option_type_elems = option_div.find_elements(By.CLASS_NAME, "bd_3iRne")
                 
-                if elem.text == split_options[i] and i < len(option_types)-1:
-                    print(f"selected {elem.text}")
-                    elem.click()
-                    break
-                elif elem.text == split_options[i] and i == len(option_types)-1:
-                    is_soldout = False
-                    print("this product is not sold out")
-                    break
-                elif elem.text == split_options[i] + " (품절)" and i == len(option_types)-1:
-                    is_soldout = True
-                    print("this product is sold out")
-                    break
+                for elem in option_type_elems:
+                    # print(f"{option_types[i].text}, {elem.text}, {split_options[i]}")
                     
-        print(options, " sold out is ", is_soldout)
+                    if elem.text == split_options[i] and i < len(option_types)-1:
+                        print(f"selected {elem.text}")
+                        elem.click()
+                        break
+                    elif elem.text == split_options[i] and i == len(option_types)-1:
+                        is_soldout = False
+                        print("this product is not sold out")
+                        break
+                    elif elem.text == split_options[i] + " (품절)" and i == len(option_types)-1:
+                        is_soldout = True
+                        print("this product is sold out")
+                        break
+                        
+            print(options, " sold out is ", is_soldout)
+        
+        else:   # 옵션이 없는 상품
+            try:
+                self.driver.find_element(By.CLASS_NAME, "_2BQ-WF2QUb")
+                is_soldout = True
+            except:
+                is_soldout = False
+            
         return is_soldout
     
             

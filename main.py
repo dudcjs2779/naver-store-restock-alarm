@@ -11,3 +11,4 @@ if __name__ == "__main__":
     mainWindow = soldout_ui.MainClass()
     mainWindow.show()
     app.exec_()
+    

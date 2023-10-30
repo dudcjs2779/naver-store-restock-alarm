@@ -40,7 +40,10 @@ class MainClass(QMainWindow, main_form):
         self.table_product.setColumnWidth(5, 100)  
         self.table_product.setColumnWidth(6, 500) 
         
-        database.update_product_by_id(5, new_option_val= "샌드,XL (품절)",new_is_soldout=True)
+        database.update_product_by_id(1, new_option_val= "오션,XS (품절)",new_is_soldout=True)
+        # database.update_product_by_id(2, new_option_val= "오션,M",new_is_soldout=False)
+        database.update_product_by_id(3, new_is_soldout=True)
+        
         
         self.load_products()
         
@@ -108,6 +111,8 @@ class MainClass(QMainWindow, main_form):
     def delete_product(self):
         if self.table_product.rowCount() > 0:
             index = self.table_product.currentRow()
+            if index == -1: index =self.table_product.rowCount()-1
+            
             print("delete_product, Index: ", index)
             selected_id = self.table_product.item(index, 0).text()
             
@@ -144,39 +149,47 @@ class MainClass(QMainWindow, main_form):
             time.sleep(random.uniform(0.5, 1))
             
         for restock_item in restock_list:
-            # restock_item = database.load_product_by_id(item)
             print(dict(restock_item))
             # print(database.load_product_by_id(item)['option_val'])
-            temp_op:str = restock_item['option_val']
-            temp_op = temp_op.replace(',', ',   ')
-            
-            print(temp_op)
-            
-            msg = f"*{restock_item['title']}*\n {temp_op}    옵션의 상품이 재입고 되었습니다!\n {restock_item['link']}"
-            bot.send_msg_to_slack(msg)
-            
-            # 품절 때기
-            print("restock_item['option_val']: ", restock_item['option_val'])
             new_option_value:str = restock_item['option_val']
             
-            temp_list = new_option_value.split(',')
+            if new_option_value != "":
+                msg_op = new_option_value.replace(',', ',   ')
+                print(msg_op)
+                
+                # 품절 때기
+                print("restock_item['option_val']: ", restock_item['option_val'])
+                new_option_value:str = restock_item['option_val']
+                
+                temp_list = new_option_value.split(',')
+                
+                if "(품절)" in temp_list[-1]:
+                    new_option_value = new_option_value[:len(new_option_value)-5]
+                
+                database.update_product_by_id(restock_item['id'], new_option_val=new_option_value, new_is_soldout=False)
+                msg = f"*{restock_item['title']}*\n {msg_op}    옵션의 상품이 재입고 되었습니다!\n {restock_item['link']}"
+                
+            else:
+                database.update_product_by_id(restock_item['id'], new_is_soldout=False)
+                msg = f"*{restock_item['title']}*   상품이 재입고 되었습니다!\n {restock_item['link']}"
             
-            if "(품절)" in temp_list[-1]:
-                new_option_value = new_option_value[:len(new_option_value)-5]
-            
-            database.update_product_by_id(restock_item['id'], new_option_val=new_option_value, new_is_soldout=False)
+            bot.send_msg_to_slack(msg)
+   
             
         for soldout_item in soldout_list:
             # 품절 붙이기
             new_option_value:str = soldout_item['option_val']
-            new_option_value:str = restock_item['option_val']
             
-            temp_list = new_option_value.split(',')
-            
-            if "(품절)" not in temp_list[-1]:
-                new_option_value += " (품절)"
-            
-            database.update_product_by_id(soldout_item['id'], new_option_val=new_option_value, new_is_soldout=True)
+            if new_option_value != "":
+                temp_list = new_option_value.split(',')
+                
+                if "(품절)" not in temp_list[-1]:
+                    new_option_value += " (품절)"
+                
+                database.update_product_by_id(soldout_item['id'], new_option_val=new_option_value, new_is_soldout=True)
+            else:
+                database.update_product_by_id(soldout_item['id'], new_is_soldout=True)
+                
         
         self.load_products()
             
