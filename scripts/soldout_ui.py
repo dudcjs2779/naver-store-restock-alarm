@@ -176,7 +176,7 @@ class MainClass(QMainWindow, main_form):
             time.sleep(random.uniform(0.5, 1))
             
         for restock_item in restock_list:
-            print(dict(restock_item))
+            # print(dict(restock_item))
             # print(database.load_product_by_id(item)['option_val'])
             new_option_value:str = restock_item['option_val']
             

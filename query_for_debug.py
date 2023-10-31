@@ -89,6 +89,8 @@ def update_product_by_id(product_id, new_title=None, new_price=None, new_option_
 
 
 
-    
-update_product_by_id(1, new_option_val="샌드,M (품절)", new_is_soldout=True)
+update_product_by_id(1, new_option_val="써니,M (품절)", new_is_soldout=True)
+update_product_by_id(3, new_option_val="574시리즈(01~08),02)남성 그레이_ML574EVG,270 (+6400원) (품절)", new_is_soldout=True)
+update_product_by_id(4, new_is_soldout=True)
+
 
