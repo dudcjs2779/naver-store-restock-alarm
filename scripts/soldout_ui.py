@@ -1,4 +1,3 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QWidget, QPlainTextEdit, QVBoxLayout, QLineEdit, QPushButton, QComboBox, QFormLayout
 from PyQt5.QtCore    import *
 from PyQt5.QtGui     import *
 from PyQt5.QtWidgets import *
@@ -6,18 +5,20 @@ from PyQt5 import uic
 import sys
 import time
 import random
-from scripts import crawling, database, bot
+import json
+import os
+from . import crawling, database, bot
 
-main_form = uic.loadUiType(r'scripts\soldout_check.ui')[0]
-insert_url_form = uic.loadUiType(r'scripts\input_url.ui')[0]
+main_form = uic.loadUiType(r'ui\soldout_check.ui')[0]
+insert_url_form = uic.loadUiType(r'ui\input_url.ui')[0]
+alarm_setting_form = uic.loadUiType(r'ui\alarm_setting.ui')[0]
+crawling_class = crawling.CrawlingClass()
 
 class MainClass(QMainWindow, main_form):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
         
-        global crawling_class
-        crawling_class = crawling.CrawlingClass()
         crawling_class.open_browser()
         
         self.btn_insert.clicked.connect(self.show_insert_url)
@@ -126,7 +127,6 @@ class MainClass(QMainWindow, main_form):
         
     def get_alarm(self):
         products = database.load_all_product()
-        product = products[0]
         
         restock_list =[]
         soldout_list =[]
@@ -173,7 +173,7 @@ class MainClass(QMainWindow, main_form):
                 database.update_product_by_id(restock_item['id'], new_is_soldout=False)
                 msg = f"*{restock_item['title']}*   상품이 재입고 되었습니다!\n {restock_item['link']}"
             
-            bot.send_msg_to_slack(msg)
+            bot.send_msg_to_slack(msg, config["slack_url"])
    
             
         for soldout_item in soldout_list:
@@ -195,7 +195,8 @@ class MainClass(QMainWindow, main_form):
             
             
     def show_alarm_setting(self):
-        pass
+        self.alarm_setting_window = AlarmSettingClass(self)
+        self.alarm_setting_window.show()
     
     def debug_update(self):
         pass
@@ -334,7 +335,176 @@ class InsertOptionClass(QDialog):
         self.close()
 
 
-
+class AlarmSettingClass(QWidget, alarm_setting_form):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+        self.setupUi(self)
+        
+        self.btn_apply.clicked.connect(self.clicked_apply)
+        self.btn_cancle.clicked.connect(self.clicked_cancle)
+        self.btn_alarm_count_confirm.clicked.connect(self.clicked_alarm_count_confirm)
+        
+        self.lineEdit_alarm_count:QLineEdit
+        self.lineEdit_slack_url:QLineEdit
+        self.lineEdit_alarm_count.setValidator(QIntValidator(1, 24, self))
         
         
+        self.lineEdit_slack_url.setText(config["slack_url"])
+        
+        self.create_alarm_form(config["alarm_count"], config["start_times"])
+        
+    def create_alarm_form(self, count, time_list):
+        self.alarm_formLayout:QFormLayout
+        self.lineEdit_alarm_count.setText(str(count))
+        
+        form_row_count = self.alarm_formLayout.rowCount()
+        print("form_row_count: ",form_row_count)
+        
+        for i in range(form_row_count):
+            self.alarm_formLayout.removeRow(0)
+        
+        self.alarm_formLayout.setVerticalSpacing(15)
+        
+        font = QFont()
+        font.setFamily('맑은 고딕')
+        font.setPointSize(12)
+        
+        self.line_edit_list = []
+        for i in range(count):
+            label = QLabel(f'알람 받을 시간:')
+            label.font = font
+            line_edit = QLineEdit()
+            
+            if len(time_list) <= i:
+                line_edit.setText("15:00")
+            else:
+                line_edit.setText(time_list[i])
+                
+            line_edit.font = font
+            
+            self.line_edit_list.append(line_edit)
+            self.alarm_formLayout.addRow(label, line_edit)
 
+        self.setLayout(self.alarm_formLayout)
+    
+    def clicked_alarm_count_confirm(self):
+        print(self.lineEdit_alarm_count.text()) 
+        
+        count = int(self.lineEdit_alarm_count.text())
+        
+        self.create_alarm_form(count, config["start_times"])
+        pass
+    
+    def clicked_apply(self):
+        
+        self.lineEdit_time:QLineEdit
+        self.lineEdit_hours:QLineEdit
+        
+        time_list = []
+        
+        for line_edit in self.line_edit_list:
+            time_list.append(line_edit.text())
+        
+        config["slack_url"] = self.lineEdit_slack_url.text()
+        config["alarm_count"] = int(self.lineEdit_alarm_count.text())
+        config["start_times"] = time_list
+        
+        with open("config.json", "w") as config_file:
+            json.dump(config, config_file)
+            
+        self.close()
+
+        
+    def clicked_cancle(self):
+        self.close()
+
+
+# 자동 알람
+def get_alarm():
+    crawling_class.open_browser()
+    
+    products = database.load_all_product()
+    
+    restock_list =[]
+    soldout_list =[]
+    
+    for product in products:
+        print(f"search {product['option_val']}")
+        url = product['link']
+        
+        prev_is_soldout = product['is_soldout']
+        # print(prev_is_soldout, type(prev_is_soldout))
+        
+        crawling_class.set_url(url)
+        now_is_soldout:bool = crawling_class.check_option_soldout(product['option_val'])
+        
+        if not now_is_soldout and prev_is_soldout:
+            restock_list.append(product)
+        elif now_is_soldout and not prev_is_soldout:
+            soldout_list.append(product)
+            
+        time.sleep(random.uniform(0.5, 1))
+        
+    for restock_item in restock_list:
+        print(dict(restock_item))
+        # print(database.load_product_by_id(item)['option_val'])
+        new_option_value:str = restock_item['option_val']
+        
+        if new_option_value != "":
+            msg_op = new_option_value.replace(',', ',   ')
+            print(msg_op)
+            
+            # 품절 때기
+            print("restock_item['option_val']: ", restock_item['option_val'])
+            new_option_value:str = restock_item['option_val']
+            
+            temp_list = new_option_value.split(',')
+            
+            if "(품절)" in temp_list[-1]:
+                new_option_value = new_option_value[:len(new_option_value)-5]
+            
+            database.update_product_by_id(restock_item['id'], new_option_val=new_option_value, new_is_soldout=False)
+            msg = f"*{restock_item['title']}*\n {msg_op}    옵션의 상품이 재입고 되었습니다!\n {restock_item['link']}"
+            
+        else:
+            database.update_product_by_id(restock_item['id'], new_is_soldout=False)
+            msg = f"*{restock_item['title']}*   상품이 재입고 되었습니다!\n {restock_item['link']}"
+        
+        bot.send_msg_to_slack(msg, config["slack_url"])
+
+        
+    for soldout_item in soldout_list:
+        # 품절 붙이기
+        new_option_value:str = soldout_item['option_val']
+        
+        if new_option_value != "":
+            temp_list = new_option_value.split(',')
+            
+            if "(품절)" not in temp_list[-1]:
+                new_option_value += " (품절)"
+            
+            database.update_product_by_id(soldout_item['id'], new_option_val=new_option_value, new_is_soldout=True)
+        else:
+            database.update_product_by_id(soldout_item['id'], new_is_soldout=True)
+            
+    crawling_class.quit_browser()
+            
+
+def get_config() -> dict:
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as config_file:
+            config = json.load(config_file)
+    else:
+        config = {
+            "slack_url": "",
+            "alarm_count": 3,
+            "start_times": ["09:00", "12:00", "15:00"]
+        }
+    
+        with open("config.json", "w") as config_file:
+            json.dump(config, config_file)
+            
+    return config
+
+config = get_config()

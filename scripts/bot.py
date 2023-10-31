@@ -7,11 +7,12 @@ import json
 # --data '{"text":"Hello, World!"}' 
 # https://hooks.slack.com/services/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
 
+
+
+
 #자신의 webbook의 주소를 입력
-slack_url = 'https://hooks.slack.com/services/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'
-
-
-
+# slack_url = 'https://hooks.slack.com/services/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'
+# slack_url = ""
 
 # msg = f"""
 # 안녕하세요 오늘은 파이썬의 크롤링을 배웠습니다. 
@@ -23,10 +24,16 @@ slack_url = 'https://hooks.slack.com/services/T06330VSJLW/B0639J615K5/Jcs8jfrOni
 #               headers={"Content-Type": "application/json"}
 #               )
 
+from requests.exceptions import MissingSchema
 
-def send_msg_to_slack(msg):
-    
-    requests.post(slack_url, 
+def send_msg_to_slack(msg, slack_url):
+    try:
+        requests.post(slack_url, 
               data=json.dumps({"text":msg}), 
               headers={"Content-Type": "application/json"}
               )
+    except :
+        print("슬랙 URL을 확인해주세요!")
+        
+        
+    

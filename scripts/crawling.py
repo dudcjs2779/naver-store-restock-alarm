@@ -21,6 +21,8 @@ class CrawlingClass():
         ChromeDriverManager().install()
         self.driver = webdriver.Chrome(options=chrome_options)
         
+    def quit_browser(self):
+        self.driver.quit()
         
     def set_url(self, url:str):
         self.url = url
@@ -148,6 +150,13 @@ class CrawlingClass():
         return options
     
     def check_option_page(self):
+        # try:
+        #     stop_selling = self.driver.find_element(By.CLASS_NAME, "_2BQ-WF2QUb").find_element(By.TAG_NAME, "strong").text
+        #     if "판매중지" in stop_selling:
+        #         return False
+        # except:
+        #     pass
+        
         try:
             no_option = self.driver.find_element(By.CLASS_NAME, "bd_2cuha")
             print("This page has no options")
@@ -227,7 +236,7 @@ class CrawlingClass():
                 is_soldout = True
             except:
                 is_soldout = False
-            
+                
         return is_soldout
     
             

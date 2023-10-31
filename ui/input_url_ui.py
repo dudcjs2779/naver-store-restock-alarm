@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'c:\Users\dudcj\OneDrive\Desktop\AI_Study\FastCampus\Python\naver_soldout_check\scripts\input_url.ui'
+# Form implementation generated from reading ui file 'c:\Users\dudcj\OneDrive\Desktop\AI_Study\FastCampus\Python\myGit\naver-store-restock-alarm\ui\input_url.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
