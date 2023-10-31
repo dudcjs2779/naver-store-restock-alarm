@@ -7,7 +7,29 @@ import time
 import random
 import json
 import os
+import schedule
 from . import crawling, database, bot
+
+
+def get_config() -> dict:
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as config_file:
+            config = json.load(config_file)
+    else:
+        config = {
+            "is_background": False,
+            "slack_url": "",
+            "alarm_count": 2,
+            "start_times": ["09:00", "15:00"],
+        }
+    
+        with open("config.json", "w") as config_file:
+            json.dump(config, config_file)
+            
+    return config
+
+config = get_config()
+
 
 main_form = uic.loadUiType(r'ui\soldout_check.ui')[0]
 insert_url_form = uic.loadUiType(r'ui\input_url.ui')[0]
@@ -19,12 +41,11 @@ class MainClass(QMainWindow, main_form):
         super().__init__()
         self.setupUi(self)
         
-        crawling_class.open_browser()
-        
         self.btn_insert.clicked.connect(self.show_insert_url)
         self.btn_remove.clicked.connect(self.delete_product)
         self.btn_get_alarm.clicked.connect(self.get_alarm)
         self.btn_alarm_setting.clicked.connect(self.show_alarm_setting)
+        self.btn_auto_play.clicked.connect(self.auto_play)
         
         self.table_product:QTableWidget
         self.table_product.setColumnCount(7)
@@ -41,10 +62,9 @@ class MainClass(QMainWindow, main_form):
         self.table_product.setColumnWidth(5, 100)  
         self.table_product.setColumnWidth(6, 500) 
         
-        database.update_product_by_id(1, new_option_val= "오션,XS (품절)",new_is_soldout=True)
+        # database.update_product_by_id(1, new_option_val= "오션,XS (품절)",new_is_soldout=True)
+        # database.update_product_by_id(3, new_is_soldout=True)
         # database.update_product_by_id(2, new_option_val= "오션,M",new_is_soldout=False)
-        database.update_product_by_id(3, new_is_soldout=True)
-        
         
         self.load_products()
         
@@ -126,6 +146,11 @@ class MainClass(QMainWindow, main_form):
         self.insert_url_window.show()
         
     def get_alarm(self):
+        if not crawling_class.is_broswer_open:
+            crawling_class.open_browser(config['is_background'])
+        else:
+            print("already opened browser")
+            
         products = database.load_all_product()
         
         restock_list =[]
@@ -143,8 +168,11 @@ class MainClass(QMainWindow, main_form):
             
             if not now_is_soldout and prev_is_soldout:
                 restock_list.append(product)
+                print(f"{product['title']} {product['option_val']} is restocked")
+                
             elif now_is_soldout and not prev_is_soldout:
                 soldout_list.append(product)
+                print(f"{product['title']} {product['option_val']} is sold out")
                 
             time.sleep(random.uniform(0.5, 1))
             
@@ -198,8 +226,9 @@ class MainClass(QMainWindow, main_form):
         self.alarm_setting_window = AlarmSettingClass(self)
         self.alarm_setting_window.show()
     
-    def debug_update(self):
-        pass
+    def auto_play(self):
+        self.close()
+        auto_play(config['start_times'])
         
     def closeEvent(self, event):
         QCoreApplication.quit()
@@ -216,6 +245,11 @@ class InsertUrlClass(QDialog, insert_url_form):
         
         
     def clicked_confirm(self):
+        if not crawling_class.is_broswer_open:
+            crawling_class.open_browser(config['is_background'])
+        else:
+            print("already opened browser")
+            
         crawling_class.set_url(self.text_input_url.toPlainText())
         
         self.product = crawling_class.crawling_product()
@@ -237,6 +271,12 @@ class InsertUrlClass(QDialog, insert_url_form):
 class InsertOptionClass(QDialog):
     def __init__(self, parent):
         super().__init__()
+        
+        if not crawling_class.is_broswer_open:
+            crawling_class.open_browser(config['is_background'])
+        else:
+            print("already opened browser")
+        
         self.parent = parent
         self.setWindowTitle('Option Select')
         self.setGeometry(100, 100, 400, 400)
@@ -341,6 +381,7 @@ class AlarmSettingClass(QWidget, alarm_setting_form):
         self.parent = parent
         self.setupUi(self)
         
+        self.checkBox_background:QCheckBox
         self.btn_apply.clicked.connect(self.clicked_apply)
         self.btn_cancle.clicked.connect(self.clicked_cancle)
         self.btn_alarm_count_confirm.clicked.connect(self.clicked_alarm_count_confirm)
@@ -349,7 +390,7 @@ class AlarmSettingClass(QWidget, alarm_setting_form):
         self.lineEdit_slack_url:QLineEdit
         self.lineEdit_alarm_count.setValidator(QIntValidator(1, 24, self))
         
-        
+        self.checkBox_background.setCheckState(config["is_background"])
         self.lineEdit_slack_url.setText(config["slack_url"])
         
         self.create_alarm_form(config["alarm_count"], config["start_times"])
@@ -406,6 +447,7 @@ class AlarmSettingClass(QWidget, alarm_setting_form):
         for line_edit in self.line_edit_list:
             time_list.append(line_edit.text())
         
+        config["is_background"] = self.checkBox_background.checkState()
         config["slack_url"] = self.lineEdit_slack_url.text()
         config["alarm_count"] = int(self.lineEdit_alarm_count.text())
         config["start_times"] = time_list
@@ -422,7 +464,10 @@ class AlarmSettingClass(QWidget, alarm_setting_form):
 
 # 자동 알람
 def get_alarm():
-    crawling_class.open_browser()
+    if not crawling_class.is_broswer_open:
+        crawling_class.open_browser(config['is_background'])
+    else:
+        print("already opened browser")
     
     products = database.load_all_product()
     
@@ -489,22 +534,19 @@ def get_alarm():
             database.update_product_by_id(soldout_item['id'], new_is_soldout=True)
             
     crawling_class.quit_browser()
-            
-
-def get_config() -> dict:
-    if os.path.exists("config.json"):
-        with open("config.json", "r") as config_file:
-            config = json.load(config_file)
-    else:
-        config = {
-            "slack_url": "",
-            "alarm_count": 3,
-            "start_times": ["09:00", "12:00", "15:00"]
-        }
     
-        with open("config.json", "w") as config_file:
-            json.dump(config, config_file)
-            
-    return config
+def auto_play(start_times:list):
+    schedule.clear()
+    
+    for start_time in start_times:
+        schedule.every().day.at(start_time).do(get_alarm)
+    
+    print(f"time schedule: {start_times} is running")
 
-config = get_config()
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+        
+            
+
+

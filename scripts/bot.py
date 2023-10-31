@@ -12,12 +12,6 @@ import json
 
 #자신의 webbook의 주소를 입력
 # slack_url = 'https://hooks.slack.com/services/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'
-# slack_url = ""
-
-# msg = f"""
-# 안녕하세요 오늘은 파이썬의 크롤링을 배웠습니다. 
-# 여기에 나중에 뉴스를 공유를 할 예정입니다.
-# """
 
 # requests.post(slack_url, 
 #               data=json.dumps({"text":msg}), 

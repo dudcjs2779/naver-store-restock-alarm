@@ -12,17 +12,23 @@ import random
 import time
 
 class CrawlingClass():
-    def open_browser(self):
+    def __init__(self) -> None:
+        self.is_broswer_open = False
+    
+    def open_browser(self, is_background:bool=False):
+        self.is_broswer_open = True
         chrome_options = webdriver.ChromeOptions()
 
         chrome_options.add_argument(r"--user-data-dir=C:\Users\dudcj\AppData\Local\Google\Chrome")
         chrome_options.add_argument("--profile-directory=Profile_1")
+        if is_background: chrome_options.add_argument('headless')
 
         ChromeDriverManager().install()
         self.driver = webdriver.Chrome(options=chrome_options)
         
     def quit_browser(self):
         self.driver.quit()
+        self.is_broswer_open = False
         
     def set_url(self, url:str):
         self.url = url
@@ -204,7 +210,7 @@ class CrawlingClass():
             if "(품절)" in last_option:
                 last_length = len(last_option)
                 last_option = last_option[:last_length-5]
-                print(last_option)
+                # print(last_option)
                 split_options[-1] = last_option
             
             
