@@ -17,6 +17,7 @@ class Ui_Dialog(object):
         Dialog.resize(572, 166)
         self.text_input_url = QtWidgets.QPlainTextEdit(Dialog)
         self.text_input_url.setGeometry(QtCore.QRect(80, 30, 471, 81))
+        self.text_input_url.setPlainText("")
         self.text_input_url.setObjectName("text_input_url")
         self.label = QtWidgets.QLabel(Dialog)
         self.label.setGeometry(QtCore.QRect(30, 30, 41, 31))
@@ -46,7 +47,6 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.text_input_url.setPlainText(_translate("Dialog", "https://smartstore.naver.com/ppz/products/8437725609?site_preference=device&NaPm=ct%3Dlo82atar%7Cci%3Dshopn%7Ctr%3Dslsl_myz%7Chk%3D8c72fa2de7a52a45c0ad3733224040129243c82a%7Ctrx%3Dundefined"))
         self.label.setText(_translate("Dialog", "URL :"))
         self.btn_confirm.setText(_translate("Dialog", "확인"))
         self.btn_cancle.setText(_translate("Dialog", "취소"))

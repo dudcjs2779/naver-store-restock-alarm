@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="plainText">
-    <string>https://smartstore.naver.com/ppz/products/8437725609?site_preference=device&amp;NaPm=ct%3Dlo82atar%7Cci%3Dshopn%7Ctr%3Dslsl_myz%7Chk%3D8c72fa2de7a52a45c0ad3733224040129243c82a%7Ctrx%3Dundefined</string>
+    <string/>
    </property>
   </widget>
   <widget class="QLabel" name="label">

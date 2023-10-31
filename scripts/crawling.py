@@ -4,12 +4,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-import pandas as pd
-import os
-from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Alignment, Font
-import random
-import time
 
 class CrawlingClass():
     def __init__(self) -> None:
